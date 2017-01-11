@@ -1,33 +1,57 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
-#Date: 24.12.2016
+"""!/usr/bin/python
+-*- coding: UTF-8 -*-
+Date: 11.01.2017
+"""
+import socket
 
-import socket           #Socketbefehle
-import time             #für Zeitstempel bei den Nachrichten
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)					#Socket des Moduls Socket wird erstellt
+s.bind(("", 100000))													#.bind benötigt Tupel als Eingabe
+s.listen(1)																#Maximale Anzahl an Verbindungspartnern
 
-host = "127.0.0.1"      #Der Server soll selbst der Host sein
-port = 10000            #egal welcher, außer xy
+quit = False															#Abbruchbedingung
+s.setblocking(False)													#Socket soll nicht blockieren --> Kommunikation möglich
 
-clients = []            #Liste aller Clients
+try:
+	#Verbidnungssocket
+	while quit == False:
+		komm, addr = s.accept()											#s.accpet() gibt Tupel mit connection und adresse zurück
+		#Kommunikationssocket
+		name = input("Dein Name: ")										#Der Server wählt einen Chatnamen
+		name = name + ": "
+		while True:
+			data = komm.recv()											#Daten werden empfangen --> Wert in ()?
+			if data == "help()":
+				#Abstände checken.
+				print("""\
+				-----------------------------------------------------
+				Help menu:
+				-----------------------------------------------------
+				Commands for the chat:
+					quit() for quitting the chat
+					name() for the name of your communication partner
+					address() for the address of your partner
+				-----------------------------------------------------
+				""")
+			elif data == "quit()":										#Beenden der Kommunikation
+				quit = True												#evtl durch break ersetzen
+				komm.close()
+			elif data == "name()":										#Rückgabe gewählter Name des Partner (Server), nicht print() sondern send()
+				#komm.send(name.encode())								#?
+				pass
+			elif data == "address":										#Rückgabe des verwendeten Ports, der IP-Adresse und des Hosts
+				#komm.send(addr.encode())								#?
+				pass
+			print("[{}]{}".format(addr[0], data.decode()))				#Ausgabe der Nachricht
+			message = name + str(input("Antwort: "))					#Typ des Rückgabewerts testen.
+			komm.send(message.encode())
+finally:
+	s.close()															#Schließen des Verbindungssockets
 
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.bind((host, port))    #Socket wird an den Server gebunden
-s.setblocking(0)        #Das Socket blockiert nicht-> immer wenn Daten ankommen,
-                        #werden diese aus dem 'Stream' geladen
 
-quitting = False
-print("Server started...")
+#https://docs.python.org/3/library/socket.html#socket.socket.accept
+#http://wwwlehre.dhbw-stuttgart.de/~schepper/Vorlesung04.pdf
 
-while quitting == False:
-    try:
-        data, addr = s.recvfrom(1024)
-        if "Quit" in str(data):     #Quit in Nachricht --> Schleife Client Ende
-            quitting = True
-        if addr not in clients:     #Adresse nicht in Liste -> Hinzufügen
-            clients.append(addr)
-        print(time.ctime(time.time()) + str(addr) + ": " + str(data))
-        for client in clients:
-            s.sendto(data, clients) #Nachricht an alle Clients
-    except:
-        pass
-s.close()               #Wenn die Schleife endet, soll die Socket geschlossen werden
+
+#Die komplette help() abfrage als Funktion und dann als Modul?
+#Help mit print() Rückgabe für den Server selbst
+#help() für den Client mit send.asdad() Befehl
